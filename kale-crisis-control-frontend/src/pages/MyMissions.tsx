@@ -25,10 +25,11 @@ interface MissionWithParticipation extends Mission {
 }
 
 export const MyMissions = () => {
-  const { missions, userParticipations, userStats } = useMissionStore();
+  const { missions, userParticipations, userStats, useRealData } = useMissionStore(); // <-- Get useRealData
   const { wallet } = useWallet();
 
-  if (!wallet?.connected) {
+  // MODIFIED: Only show "Wallet Not Connected" if in Live Mode
+  if (useRealData && !wallet?.connected) {
     return (
       <div className="min-h-screen bg-background">
         <main className="container mx-auto px-4 py-8">

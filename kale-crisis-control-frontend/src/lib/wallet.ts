@@ -8,9 +8,7 @@ import { Horizon } from "@stellar/stellar-sdk";
 import { NETWORK } from "../config/contracts";
 
 export interface WalletState {
-  connected: boolean
-
-;
+  connected: boolean;
   address: string | null;
   walletType: "freighter" | "xbull" | null;
   balance: {
@@ -26,6 +24,9 @@ interface HorizonBalance {
   asset_issuer?: string;
 }
 
+// Key for localStorage
+const WALLET_STORAGE_KEY = 'kale-wallet-session';
+
 export function useWallet() {
   const [wallet, setWallet] = useState<WalletState>({
     connected: false,
@@ -40,7 +41,6 @@ export function useWallet() {
     modules: allowAllModules()
   }));
 
-  // Use Horizon server for account data (not Soroban Server)
   const server = new Horizon.Server(NETWORK.rpcUrl);
 
   const fetchBalance = async (address: string) => {
@@ -54,52 +54,50 @@ export function useWallet() {
         }
       });
 
-      return { xlm: xlmBalance, kale: 0 }; // Add KALE balance logic later
+      return { xlm: xlmBalance, kale: 0 };
     } catch (error) {
       console.error('Error fetching balance:', error);
       return { xlm: 0, kale: 0 };
     }
   };
+  
+  // Function to update and persist wallet state
+  const updateWalletState = (newState: Partial<WalletState>) => {
+    setWallet(prevState => {
+      const updatedState = { ...prevState, ...newState };
+      if (updatedState.connected && updatedState.address && updatedState.walletType) {
+        localStorage.setItem(WALLET_STORAGE_KEY, JSON.stringify({
+          address: updatedState.address,
+          walletType: updatedState.walletType,
+        }));
+      }
+      return updatedState;
+    });
+  };
 
-  const connectFreighter = async () => {
+  const connectWallet = async (walletType: 'freighter' | 'xbull') => {
     try {
-      await kit.setWallet('freighter');
-      // Use getAddress() instead of getPublicKey()
+      await kit.setWallet(walletType);
       const { address } = await kit.getAddress();
       const balance = await fetchBalance(address);
-      
-      setWallet({
+
+      updateWalletState({
         connected: true,
         address,
-        walletType: 'freighter',
+        walletType,
         balance,
       });
     } catch (error) {
-      console.error('Error connecting to Freighter:', error);
-      throw new Error('Failed to connect to Freighter wallet');
+      console.error(`Error connecting to ${walletType}:`, error);
+      throw new Error(`Failed to connect to ${walletType} wallet`);
     }
   };
 
-  const connectXBull = async () => {
-    try {
-      await kit.setWallet('xbull');
-      // Use getAddress() instead of getPublicKey()
-      const { address } = await kit.getAddress();
-      const balance = await fetchBalance(address);
-      
-      setWallet({
-        connected: true,
-        address,
-        walletType: 'xbull',
-        balance,
-      });
-    } catch (error) {
-      console.error('Error connecting to xBull:', error);
-      throw new Error('Failed to connect to xBull wallet');
-    }
-  };
+  const connectFreighter = () => connectWallet('freighter');
+  const connectXBull = () => connectWallet('xbull');
 
   const disconnect = () => {
+    localStorage.removeItem(WALLET_STORAGE_KEY);
     setWallet({
       connected: false,
       address: null,
@@ -125,6 +123,28 @@ export function useWallet() {
       throw new Error('Failed to sign transaction');
     }
   };
+
+  // useEffect to restore session on component mount
+  useEffect(() => {
+    const savedSession = localStorage.getItem(WALLET_STORAGE_KEY);
+    if (savedSession) {
+      const { address, walletType } = JSON.parse(savedSession);
+      if (address && walletType) {
+        // Restore state without re-prompting for connection
+        (async () => {
+          const balance = await fetchBalance(address);
+          setWallet({
+            connected: true,
+            address,
+            walletType,
+            balance
+          });
+          // Silently set the wallet in the kit for subsequent actions
+          await kit.setWallet(walletType);
+        })();
+      }
+    }
+  }, [kit]); // Add kit to dependency array
 
   return {
     wallet,
