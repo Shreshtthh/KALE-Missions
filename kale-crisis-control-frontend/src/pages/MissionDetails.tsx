@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMissionStore } from '@/stores/missionStore';
-import { useWallet } from '@/lib/wallet';
+import { useWallet } from '@/lib/wallet'; // ✅ Import the hook
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,15 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Users, Target, Clock, AlertCircle, CheckCircle, Trophy, PartyPopper } from 'lucide-react';
+import { ArrowLeft, Users, Target, Clock, CheckCircle, Trophy, PartyPopper } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 export const MissionDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { missions, userParticipations, useRealData, enlistInMission, addContribution, loading } = useMissionStore();
-  const { wallet, signTransaction } = useWallet();
+  const { wallet, kit } = useWallet(); // ✅ Use the hook to get both wallet and kit
   const { toast } = useToast();
 
   const [stakeAmount, setStakeAmount] = useState('');
@@ -43,46 +42,92 @@ export const MissionDetails = () => {
   const progressPercentage = (mission.current_progress / mission.target_liquidity) * 100;
   const isMissionComplete = progressPercentage >= 100;
 
-  // RESTORED: Full logic for handleEnlist
   const handleEnlist = async () => {
-    const amount = parseInt(stakeAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast({ title: "Invalid Amount", description: "Please enter a valid stake amount.", variant: "destructive" });
+    if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
+      toast({ 
+        title: "Invalid Amount", 
+        description: "Please enter a valid stake amount.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    if (useRealData && !wallet.connected) {
+      toast({ 
+        title: "Wallet Not Connected", 
+        description: "Please connect your wallet to enlist.", 
+        variant: "destructive" 
+      });
       return;
     }
 
     setIsEnlisting(true);
     try {
-      await enlistInMission(mission.id, amount, wallet.address ?? undefined, signTransaction);
+      // ✅ Pass the correct WalletInfo structure with both wallet and kit
+      await enlistInMission(id!, parseFloat(stakeAmount), { wallet, kit });
+      
+      toast({
+        title: useRealData ? "Transaction Submitted" : "Enlisted Successfully (Demo)",
+        description: useRealData 
+          ? "Your enlistment transaction has been sent to the network." 
+          : `You have enlisted with ${stakeAmount} KALE stake.`,
+      });
       setStakeAmount('');
-      toast({ title: "Mission Enlisted!", description: `Successfully enlisted with ${amount} KALE tokens.` });
     } catch (error) {
-      toast({ title: "Enlistment Failed", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+      console.error('Enlist error:', error);
+      toast({
+        title: "Failed to Enlist",
+        description: error instanceof Error ? error.message : "An error occurred.",
+        variant: "destructive",
+      });
     } finally {
       setIsEnlisting(false);
     }
   };
 
-  // RESTORED: Full logic for handleContribute
   const handleContribute = async () => {
-    const amount = parseInt(contributionAmount);
-    if (isNaN(amount) || amount <= 0) {
-      toast({ title: "Invalid Amount", description: "Please enter a valid contribution amount.", variant: "destructive" });
+    if (!contributionAmount || parseFloat(contributionAmount) <= 0) {
+      toast({ 
+        title: "Invalid Amount", 
+        description: "Please enter a valid contribution amount.", 
+        variant: "destructive" 
+      });
       return;
     }
-    
+
+    if (useRealData && !wallet.connected) {
+      toast({ 
+        title: "Wallet Not Connected", 
+        description: "Please connect your wallet to contribute.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
     setIsContributing(true);
     try {
-      await addContribution(mission.id, amount, wallet.address ?? undefined, signTransaction);
+      // ✅ Pass the correct WalletInfo structure with both wallet and kit
+      await addContribution(id!, parseFloat(contributionAmount), { wallet, kit });
+      
+      toast({
+        title: useRealData ? "Transaction Submitted" : "Contribution Added (Demo)",
+        description: useRealData 
+          ? "Your contribution transaction has been sent to the network." 
+          : `You have contributed ${contributionAmount} KALE to the mission.`,
+      });
       setContributionAmount('');
-      toast({ title: "Contribution Added!", description: `Added ${amount} KALE to the mission.` });
     } catch (error) {
-      toast({ title: "Contribution Failed", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
+      console.error('Contribute error:', error);
+      toast({
+        title: "Failed to Contribute",
+        description: error instanceof Error ? error.message : "An error occurred.",
+        variant: "destructive",
+      });
     } finally {
       setIsContributing(false);
     }
   };
-  
+
   const handleClaimReward = () => {
     toast({
       title: "Rewards Claimed! (Demo)",
@@ -98,15 +143,6 @@ export const MissionDetails = () => {
           Back to Dashboard
         </Button>
       </div>
-
-      {useRealData && !wallet.connected && (
-        <Alert className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            You're in Live Mode but no wallet is connected. Connect your wallet to participate.
-          </AlertDescription>
-        </Alert>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
@@ -191,21 +227,22 @@ export const MissionDetails = () => {
             </Card>
           )}
 
+          {/* Conditional Action Cards */}
           {isMissionComplete ? (
             <Card className="bg-success/10 border-success/20 text-center">
-                <CardHeader>
-                    <CardTitle className="flex items-center justify-center text-success">
-                        <PartyPopper className="h-6 w-6 mr-2"/>
-                        Goal Achieved!
-                    </CardTitle>
-                    <CardDescription>This mission has been successfully completed thanks to your contribution.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button onClick={handleClaimReward} variant="mission-success" className="w-full">
-                        <Trophy className="h-4 w-4 mr-2"/>
-                        Claim Reward
-                    </Button>
-                </CardContent>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-center text-success">
+                  <PartyPopper className="h-6 w-6 mr-2"/>
+                  Goal Achieved!
+                </CardTitle>
+                <CardDescription>This mission has been successfully completed thanks to your contribution.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={handleClaimReward} variant="mission-success" className="w-full">
+                  <Trophy className="h-4 w-4 mr-2"/>
+                  Claim Reward
+                </Button>
+              </CardContent>
             </Card>
           ) : !userParticipation ? (
             <Card>
@@ -216,9 +253,20 @@ export const MissionDetails = () => {
               <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="stake">Stake Amount (KALE)</Label>
-                  <Input id="stake" type="number" placeholder="Enter amount" value={stakeAmount} onChange={(e) => setStakeAmount(e.target.value)} disabled={loading || isEnlisting} />
+                  <Input 
+                    id="stake" 
+                    type="number" 
+                    placeholder="Enter amount" 
+                    value={stakeAmount} 
+                    onChange={(e) => setStakeAmount(e.target.value)} 
+                    disabled={loading || isEnlisting} 
+                  />
                 </div>
-                <Button onClick={handleEnlist} className="w-full" disabled={isEnlisting || (useRealData && !wallet.connected)}>
+                <Button 
+                  onClick={handleEnlist} 
+                  className="w-full" 
+                  disabled={isEnlisting || (useRealData && !wallet.connected)}
+                >
                   {isEnlisting ? "Enlisting..." : "Enlist in Mission"}
                 </Button>
               </CardContent>
@@ -232,9 +280,21 @@ export const MissionDetails = () => {
               <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="contribution">Contribution Amount (KALE)</Label>
-                  <Input id="contribution" type="number" placeholder="Enter amount" value={contributionAmount} onChange={(e) => setContributionAmount(e.target.value)} disabled={loading || isContributing} />
+                  <Input 
+                    id="contribution" 
+                    type="number" 
+                    placeholder="Enter amount" 
+                    value={contributionAmount} 
+                    onChange={(e) => setContributionAmount(e.target.value)} 
+                    disabled={loading || isContributing} 
+                  />
                 </div>
-                <Button onClick={handleContribute} variant="outline" className="w-full" disabled={isContributing || (useRealData && !wallet.connected)}>
+                <Button 
+                  onClick={handleContribute} 
+                  variant="outline" 
+                  className="w-full" 
+                  disabled={isContributing || (useRealData && !wallet.connected)}
+                >
                   {isContributing ? "Contributing..." : "Add Contribution"}
                 </Button>
               </CardContent>
