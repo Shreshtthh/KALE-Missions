@@ -1,0 +1,173 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* KALE Missions Design System - Mission Control Aesthetic */
+@layer base {
+  :root {
+    /* Mission Control Dark Theme */
+    --background: 224 71% 4%;              /* Deep space blue #0A0E1A */
+    --foreground: 210 17% 98%;             /* Bright white text */
+
+    --card: 223 47% 11%;                   /* Command panel dark #1A1F2E */
+    --card-foreground: 210 17% 98%;
+
+    --popover: 223 47% 11%;
+    --popover-foreground: 210 17% 98%;
+
+    /* Mission Accent Colors */
+    --primary: 43 96% 56%;                 /* Mission amber #F59E0B */
+    --primary-foreground: 224 71% 4%;
+
+    --secondary: 217 91% 60%;              /* Command blue #3B82F6 */
+    --secondary-foreground: 210 17% 98%;
+
+    --success: 158 64% 52%;                /* Success green #10B981 */
+    --success-foreground: 210 17% 98%;
+
+    --muted: 215 28% 17%;                  /* Muted panel #2D3748 */
+    --muted-foreground: 218 11% 65%;      /* Muted text #9CA3AF */
+
+    --accent: 43 96% 56%;                  /* Accent amber */
+    --accent-foreground: 224 71% 4%;
+
+    --destructive: 0 84% 60%;              /* Alert red */
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 215 28% 25%;                 /* Border gray #374151 */
+    --input: 215 28% 17%;
+    --ring: 43 96% 56%;
+
+    --radius: 0.75rem;
+
+    /* Mission Control Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(43 96% 56%), hsl(38 92% 50%));
+    --gradient-secondary: linear-gradient(135deg, hsl(217 91% 60%), hsl(224 76% 48%));
+    --gradient-success: linear-gradient(135deg, hsl(158 64% 52%), hsl(160 84% 39%));
+    --gradient-danger: linear-gradient(135deg, hsl(0 84% 60%), hsl(0 91% 71%));
+    
+    /* Mission Control Effects */
+    --shadow-glow: 0 0 30px hsl(43 96% 56% / 0.3);
+    --shadow-mission: 0 8px 30px hsl(224 71% 4% / 0.4);
+    --shadow-elevated: 0 20px 40px hsl(224 71% 4% / 0.6);
+    
+    /* Animation Timing */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  }
+
+  /* Mission Control Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--accent));
+  }
+}
+
+@layer components {
+  /* Mission Control Button Variants */
+  .btn-mission-primary {
+    @apply relative overflow-hidden;
+    background: var(--gradient-primary);
+    box-shadow: var(--shadow-glow);
+    transition: var(--transition-smooth);
+  }
+
+  .btn-mission-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .btn-mission-secondary {
+    background: var(--gradient-secondary);
+    transition: var(--transition-smooth);
+  }
+
+  .btn-mission-success {
+    background: var(--gradient-success);
+    transition: var(--transition-smooth);
+  }
+
+  /* Mission Status Indicators */
+  .mission-active {
+    @apply relative;
+    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .mission-progress-bar {
+    background: var(--gradient-primary);
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Countdown Timer Effects */
+  .countdown-urgent {
+    animation: countdown-pulse 1s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px hsl(43 96% 56% / 0.4);
+    }
+    50% {
+      box-shadow: 0 0 30px hsl(43 96% 56% / 0.8);
+    }
+  }
+
+  @keyframes countdown-pulse {
+    0%, 100% {
+      transform: scale(1);
+      color: hsl(var(--foreground));
+    }
+    50% {
+      transform: scale(1.05);
+      color: hsl(var(--primary));
+    }
+  }
+
+  @keyframes slide-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-in-up {
+    animation: slide-in-up 0.6s ease-out;
+  }
+}

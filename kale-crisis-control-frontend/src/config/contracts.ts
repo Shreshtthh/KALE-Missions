@@ -1,0 +1,15 @@
+// kale-crisis-control/src/config/contracts.ts
+export const NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
+export const RPC_URL = "https://soroban-testnet.stellar.org";
+
+export const CONTRACT_ADDRESSES = {
+  MISSION_CONTROLLER: "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQAUJKENFW2",
+  MOCK_ORACLE: "CBQHNAXSI55GX2GN6D67GK7BHVPSJ74U4RMDS3QRXRKUYA5ZIJ6",
+  REFLECTOR_READER: "CDRCRFGDKC5LG2MCIQM2QWMCJZZ7CZWGFK6Z5UIZHQCGP2JPTWB",
+};
+
+export const NETWORK = {
+  network: "TESTNET",
+  networkPassphrase: NETWORK_PASSPHRASE,
+  rpcUrl: RPC_URL,
+};
