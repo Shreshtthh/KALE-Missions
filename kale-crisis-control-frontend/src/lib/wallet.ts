@@ -41,7 +41,7 @@ export function useWallet() {
     modules: allowAllModules()
   }));
 
-  const server = new Horizon.Server(NETWORK.rpcUrl);
+  const server = new Horizon.Server(NETWORK.horizonUrl);
 
   const fetchBalance = async (address: string) => {
     try {
